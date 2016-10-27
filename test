@@ -1,21 +1,122 @@
+#include "stdafx.h"
 #include <ntddk.h>
- 
-NTSTATUS DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath);
-VOID UnloadRoutine(IN PDRIVER_OBJECT DriverObject);
- 
-#pragma alloc_text(INIT, DriverEntry)
-#pragma alloc_text(PAGE, UnloadRoutine)
- 
-NTSTATUS DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
+
+#include "DriverMain.h"
+
+NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
-  DriverObject->DriverUnload = UnloadRoutine;
+	moufiltr.inf
+
+ Installation inf for the Device that needs flitering adapter.
+
+ (c) Copyright 2001 ATI Technologies
+
+
+[Version]
+Signature="$Windows NT$"
+Provider=%ATI%
+ClassGUID={4D36E96F-E325-11CE-BFC1-08002BE10318}
+Class=Mouse
+CatalogFile=moufiltr.cat
+DriverVer=01/10/2001
+
+[DestinationDirs]
+DefaultDestDir   = 12
+
+
+ Driver information
+
+
+[Manufacturer]
+%ATI%   = ATI.Mfg
+
+[ATI.Mfg]
+%DESCRIPTION%= moufiltr, HID_DEVICE_SYSTEM_MOUSE
+
+
+ General installation section
+
+
+[moufiltr]
+ perform port related actions from msmouse.inf
+Include=msmouse.inf
+Needs=PS2_Inst
+
+ Copy the driver over
+CopyFiles=moufiltr.CopyFiles
+
+
+ File sections
+
+
+[moufiltr.CopyFiles]
+moufiltr.sys
+
+
+ Service Installation
+
+
+[moufiltr.Services]
+AddService = moufiltr,  , moufiltr_Service_Inst
+Install the port driver and mouclass from msmouse.inf
+Include=msmouse.inf
+Needs=PS2_Inst.Services
+
+[moufiltr_Service_Inst]
+DisplayName    = %moufiltr.SvcDesc%
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE
+LoadOrderGroup = Pointer Port
+ServiceBinary  = %12%\moufiltr.sys
+
+[moufiltr.HW]
+; Add the device upper filter
+AddReg = moufiltr.HW.AddReg
+
+; run the directives need by the port driver
+Include=msmouse.inf
+Needs=PS2_Inst.HW
+
+[moufiltr.HW.AddReg]
+HKR,,"UpperFilters",0x00010000,"moufiltr"
+
+
+
+Source file information
+
+
+ use [SourceDisksNames.x86] for x86 only installs
+ use [SourceDisksNames.alpha] for alpha only installs
+
+[SourceDisksNames]
+1 = %DiskId1%,,,
+
+[SourceDisksFiles]
+moufiltr.sys = 1,,
+
+[Strings]
+
+
+ Non-Localizable Strings
+
+
+REG_SZ         = 0x00000000
+REG_MULTI_SZ   = 0x00010000
+REG_EXPAND_SZ  = 0x00020000
+REG_BINARY     = 0x00000001
+REG_DWORD      = 0x00010001
+SERVICEROOT    = "System\CurrentControlSet\Services"
+
+
+Localizable Strings
+DiskId1 = "ATI Mouse Filter Installation Disk #1 (Rotation)"
+ATI = "ATI Technologies"
+moufiltr.SvcDesc="Mouse Filter Example"
+DESCRIPTION = "ATI Mouse Filter"
+  
  
-  DbgPrint(«Hello world!\n»);
  
-  return STATUS_SUCCESS;
-}
  
-VOID UnloadRoutine(IN PDRIVER_OBJECT DriverObject)
-{
-  DbgPrint(«Goodbye!\n»);
+	return STATUS_SUCCESS;
 }
